@@ -6,7 +6,7 @@ pygame.init()
 # display
 screen_width = 1600
 screen_height = 900
-side_padding = 50
+side_padding = 100
 ground_level = screen_height - side_padding
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("MiSK - project")
@@ -88,13 +88,14 @@ def draw_scale():
             white,
             (start, ground_level),
             (start, ground_level + int(0.25 * side_padding)),
-            width=4,
+            width=2,
         )
 
         if count_lines % text_step == 0 or first:
             text_image = scale_font.render(meters_to_text(meters), True, white)
             text_image_rect = text_image.get_rect()
             text_image_rect.center = (start, ground_level + int(0.5 * side_padding))
+            text_image.convert_alpha()
             screen.blit(text_image, text_image_rect)
 
         count_lines += 1
@@ -117,13 +118,14 @@ def draw_scale():
             white,
             (side_padding, start),
             (side_padding - int(0.25 * side_padding), start),
-            width=4,
+            width=2,
         )
 
         if count_lines % text_step == 0 or first:
             text_image = scale_font.render(meters_to_text(meters), True, white)
             text_image_rect = text_image.get_rect()
-            text_image_rect.center = (side_padding - int(0.5 * side_padding), start)
+            text_image_rect.center = (side_padding - int(0.6 * side_padding), start)
+            text_image.convert_alpha()
             screen.blit(text_image, text_image_rect)
 
         count_lines += 1
@@ -142,7 +144,7 @@ class main_module:
         Next_module = Module_names.Exit_app
 
         global meters_to_pixel_ratio
-        meters_to_pixel_ratio = 0.1
+        meters_to_pixel_ratio = 25
 
         while run:
             draw_scale()
