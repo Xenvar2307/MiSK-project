@@ -16,8 +16,9 @@ screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("MiSK - project")
 
 # font
-scale_font = pygame.font.SysFont("Times New Roman", 20)
-button_font = pygame.font.SysFont("Times New Roman", 200)
+scale_font = pygame.font.SysFont("Arial", 20)
+time_info_font = pygame.font.SysFont("Arial", 25)
+button_font = pygame.font.SysFont("Arial", 200)
 
 # frames
 fps = 60
@@ -187,7 +188,7 @@ class Trebuchet:
 
         # update part
 
-        # state
+        # state variables, angles
         self.pivot_arm_angle = (
             math.asin(self.pivot_height / self.long_arm_length) + math.pi / 2
         )
@@ -196,13 +197,12 @@ class Trebuchet:
             self.pivot_height / self.long_arm_length
         )
 
-        # surowe liczenie na pałe
-        # stałe
+        # base points, manually changed only
         self.base_point = (screen_width_middle, ground_level)
         self.pivot_point = add_points(
             self.base_point, (0, -meters_to_pixel_ratio * self.pivot_height)
         )
-        # zmienne TO DO ALL
+        # state points, changed depending on state
         self.end_long_arm = add_points(
             self.base_point,
             (
@@ -266,6 +266,7 @@ class Trebuchet:
             ),
         )
 
+        # only before launch
         self.projectile_pos = self.end_sling
 
     def update(self, time_passed):
@@ -376,6 +377,7 @@ class Trebuchet:
             width=int(trebuchet_thickness),
         )
 
+        # projectile
         pygame.draw.circle(
             screen, grey, self.projectile_pos, int(0.2 * meters_to_pixel_ratio)
         )
@@ -387,12 +389,105 @@ class Trebuchet:
             width=2,
         )
 
+        # weight
         pygame.draw.circle(
             screen, dark_grey, self.weight_point, int(0.5 * meters_to_pixel_ratio)
         )
 
     def change_base_point(self, tuple):
         self.base_point = tuple
+
+    def reset(self):
+        # update part
+
+        # state variables, angles
+        self.pivot_arm_angle = (
+            math.asin(self.pivot_height / self.long_arm_length) + math.pi / 2
+        )
+        self.arm_sling_angle = math.asin(self.pivot_height / self.long_arm_length)
+        self.arm_weight_angle = math.pi / 2 - math.asin(
+            self.pivot_height / self.long_arm_length
+        )
+
+        # base points, manually changed only
+        self.base_point = (screen_width_middle, ground_level)
+        self.pivot_point = add_points(
+            self.base_point, (0, -meters_to_pixel_ratio * self.pivot_height)
+        )
+        # state points, changed depending on state
+        self.end_long_arm = add_points(
+            self.base_point,
+            (
+                -self.long_arm_length
+                * math.sin(self.pivot_arm_angle)
+                * meters_to_pixel_ratio,
+                -meters_to_pixel_ratio
+                * (
+                    self.long_arm_length * math.cos(self.pivot_arm_angle)
+                    + self.pivot_height
+                ),
+            ),
+        )
+        self.end_short_arm = add_points(
+            self.base_point,
+            (
+                meters_to_pixel_ratio
+                * (self.short_arm_length * math.sin(self.pivot_arm_angle)),
+                -meters_to_pixel_ratio
+                * (
+                    -self.short_arm_length * math.cos(self.pivot_arm_angle)
+                    + self.pivot_height
+                ),
+            ),
+        )
+
+        self.end_sling = add_points(
+            self.base_point,
+            (
+                meters_to_pixel_ratio
+                * (
+                    -self.long_arm_length * math.sin(self.pivot_arm_angle)
+                    - self.sling_length
+                    * math.sin(self.arm_sling_angle - self.pivot_arm_angle)
+                ),
+                -meters_to_pixel_ratio
+                * (
+                    self.long_arm_length * math.cos(self.pivot_arm_angle)
+                    + self.pivot_height
+                    - self.sling_length
+                    * math.cos(self.arm_sling_angle - self.pivot_arm_angle)
+                ),
+            ),
+        )
+        self.weight_point = add_points(
+            self.base_point,
+            (
+                meters_to_pixel_ratio
+                * (
+                    self.short_arm_length * math.sin(self.pivot_arm_angle)
+                    - self.weight_length
+                    * math.sin(self.pivot_arm_angle + self.arm_weight_angle)
+                ),
+                -meters_to_pixel_ratio
+                * (
+                    -self.short_arm_length * math.cos(self.pivot_arm_angle)
+                    + self.pivot_height
+                    + self.weight_length
+                    * math.cos(self.pivot_arm_angle + self.arm_weight_angle)
+                ),
+            ),
+        )
+
+        # only before launch
+        self.projectile_pos = self.end_sling
+
+
+def reset_simulation(trebuchet: Trebuchet):
+    global simulation_time
+    global simulation_running
+    simulation_running = False
+    simulation_time = 0.0
+    trebuchet.reset()
 
 
 class main_module:
@@ -410,6 +505,10 @@ class main_module:
             screen, "Run/Stop Simulation", button_font, screen_width - 200, 0, 200, 50
         )
 
+        Reset_button = ButtonFactory.factory(
+            screen, "Reset Simulation", button_font, screen_width - 200, 50, 200, 50
+        )
+
         DownX_button = ButtonFactory.factory(
             screen, "-0.5X", button_font, screen_width - 350, 0, 75, 50
         )
@@ -418,24 +517,49 @@ class main_module:
         )
 
         global simulation_time
-        simulation_time = 0.0
+        # simulation_time = 0.0
         global simulation_speed
-        simulation_speed = 1.0
+        # simulation_speed = 1.0
 
         while run:
+            # fps control
             clock.tick(fps)
-            # stable or running images
-            reset_screen()
-            draw_scale()
+            # check if we need to update state of trebuchet
             if simulation_running:
                 trebuchet.update(simulation_speed * 1 / fps)
                 simulation_time += simulation_speed * 1 / fps
+            # check for new input values for dimentions of trebuchet
+            # TO DO buttons and changing
+            #
+            # set scale so that it is visible
+
+            meters_to_pixel_ratio = int(
+                (screen_height - 2 * side_padding)
+                / (
+                    trebuchet.pivot_height
+                    + trebuchet.long_arm_length
+                    + trebuchet.sling_length
+                )
+            )
+
+            # stable or changed images
+            reset_screen()
+            draw_scale()
+
+            # draw the trebuchet itself with current scale
+            trebuchet.update(0)
             trebuchet.draw(dev_mode)
 
-            # buttons
+            # buttons for running and speed control
 
             if Run_button.draw():
-                simulation_running = ~simulation_running
+                simulation_running = (
+                    not simulation_running
+                )  # change state to negation of current state
+
+            if simulation_time > 0.0:
+                if Reset_button.draw():
+                    reset_simulation(trebuchet)
 
             if UpX_button.draw():
                 if simulation_speed == 0.1:
@@ -448,14 +572,14 @@ class main_module:
                 elif simulation_speed > simulation_speed_lower_limit:
                     simulation_speed -= 0.5
 
-            # running info
+            # running info print
             temp_cute_time = round(simulation_time, 2)
-            Run_info_image = scale_font.render(
+            Run_info_image = time_info_font.render(
                 f"Speed: {simulation_speed}  Time: {temp_cute_time}", True, white
             )
 
             Run_info_image.convert_alpha()
-            screen.blit(Run_info_image, (screen_width - 200, 50))
+            screen.blit(Run_info_image, (10, 10))
 
             # event control
             for event in pygame.event.get():
