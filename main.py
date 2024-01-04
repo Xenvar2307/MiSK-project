@@ -1,6 +1,7 @@
 import pygame
 import math
 from enum import Enum
+from buttons import *
 
 pygame.init()
 
@@ -16,6 +17,7 @@ pygame.display.set_caption("MiSK - project")
 
 # font
 scale_font = pygame.font.SysFont("Times New Roman", 20)
+button_font = pygame.font.SysFont("Times New Roman", 200)
 
 # frames
 fps = 60
@@ -24,8 +26,24 @@ clock = pygame.time.Clock()
 black = (0, 0, 0)
 white = (255, 255, 255)
 green = (0, 255, 0)
+brown = (205, 133, 63)
+light_grey = (220, 220, 220)
+grey = (169, 169, 169)
+dark_grey = (112, 128, 144)
 
-meters_to_pixel_ratio = 100
+ButtonFactory = ButtonFactory_Standard()
+
+meters_to_pixel_ratio = 40
+g = 9.81
+release_angle = math.pi / 4  # 45 degrees
+trebuchet_thickness = 5
+
+simulation_time = 0.0
+simulation_running = False
+
+simulation_speed = 1.0
+simulation_speed_upper_limit = 5.0
+simulation_speed_lower_limit = 0.5  # 0.1 exception
 
 
 def add_points(x, y):
@@ -177,9 +195,6 @@ class Trebuchet:
         self.arm_weight_angle = math.pi / 2 - math.asin(
             self.pivot_height / self.long_arm_length
         )
-        print(math.degrees(self.pivot_arm_angle))
-        print(math.degrees(self.arm_sling_angle))
-        print(math.degrees(self.arm_weight_angle))
 
         # surowe liczenie na pałe
         # stałe
@@ -214,7 +229,7 @@ class Trebuchet:
             ),
         )
 
-        self.projectile_point = add_points(
+        self.end_sling = add_points(
             self.base_point,
             (
                 meters_to_pixel_ratio
@@ -251,12 +266,17 @@ class Trebuchet:
             ),
         )
 
-    def update(self):
+        self.projectile_pos = self.end_sling
+
+    def update(self, time_passed):
         # TO DO aktualizacja kątów
-        #
+        self.pivot_arm_angle += 0.5 * time_passed
         #
         #
         # ustawianie punktów do pozycji trebusza
+        self.pivot_point = add_points(
+            self.base_point, (0, -meters_to_pixel_ratio * self.pivot_height)
+        )
         self.end_long_arm = add_points(
             self.base_point,
             (
@@ -283,7 +303,7 @@ class Trebuchet:
             ),
         )
 
-        self.projectile_point = add_points(
+        self.end_sling = add_points(
             self.base_point,
             (
                 meters_to_pixel_ratio
@@ -320,54 +340,124 @@ class Trebuchet:
             ),
         )
 
+        # TO DO change to track after release
+        self.projectile_pos = self.end_sling
+
     def draw(self, subtitles):
         pygame.draw.line(
             screen,
-            white,
+            brown,
             to_int(self.base_point),
             to_int(self.pivot_point),
-            width=4,
+            width=int(trebuchet_thickness),
         )
 
         pygame.draw.line(
             screen,
-            green,
+            brown,
             to_int(self.end_short_arm),
             to_int(self.end_long_arm),
-            width=4,
+            width=int(trebuchet_thickness),
         )
 
         pygame.draw.line(
             screen,
-            green,
+            brown,
             to_int(self.end_short_arm),
             to_int(self.weight_point),
-            width=4,
+            width=int(trebuchet_thickness),
         )
 
         pygame.draw.line(
             screen,
-            green,
+            brown,
             to_int(self.end_long_arm),
-            to_int(self.projectile_point),
-            width=4,
+            to_int(self.end_sling),
+            width=int(trebuchet_thickness),
         )
+
+        pygame.draw.circle(
+            screen, grey, self.projectile_pos, int(0.2 * meters_to_pixel_ratio)
+        )
+        pygame.draw.circle(
+            screen,
+            light_grey,
+            self.projectile_pos,
+            int(0.2 * meters_to_pixel_ratio),
+            width=2,
+        )
+
+        pygame.draw.circle(
+            screen, dark_grey, self.weight_point, int(0.5 * meters_to_pixel_ratio)
+        )
+
+    def change_base_point(self, tuple):
+        self.base_point = tuple
 
 
 class main_module:
     def run(self, dev_mode: bool, trebuchet: Trebuchet):
         # event control
         run = True
+        global simulation_running
+        simulation_running = False
         Next_module = Module_names.Exit_app
 
         global meters_to_pixel_ratio
-        meters_to_pixel_ratio = 100
+        meters_to_pixel_ratio = 40
+
+        Run_button = ButtonFactory.factory(
+            screen, "Run/Stop Simulation", button_font, screen_width - 200, 0, 200, 50
+        )
+
+        DownX_button = ButtonFactory.factory(
+            screen, "-0.5X", button_font, screen_width - 350, 0, 75, 50
+        )
+        UpX_button = ButtonFactory.factory(
+            screen, "+0.5X", button_font, screen_width - 275, 0, 75, 50
+        )
+
+        global simulation_time
+        simulation_time = 0.0
+        global simulation_speed
+        simulation_speed = 1.0
 
         while run:
+            clock.tick(fps)
+            # stable or running images
+            reset_screen()
             draw_scale()
-            trebuchet.update()
+            if simulation_running:
+                trebuchet.update(simulation_speed * 1 / fps)
+                simulation_time += simulation_speed * 1 / fps
             trebuchet.draw(dev_mode)
 
+            # buttons
+
+            if Run_button.draw():
+                simulation_running = ~simulation_running
+
+            if UpX_button.draw():
+                if simulation_speed == 0.1:
+                    simulation_speed = 0.5
+                elif simulation_speed < simulation_speed_upper_limit:
+                    simulation_speed += 0.5
+            if DownX_button.draw():
+                if simulation_speed == 0.5:
+                    simulation_speed = 0.1
+                elif simulation_speed > simulation_speed_lower_limit:
+                    simulation_speed -= 0.5
+
+            # running info
+            temp_cute_time = round(simulation_time, 2)
+            Run_info_image = scale_font.render(
+                f"Speed: {simulation_speed}  Time: {temp_cute_time}", True, white
+            )
+
+            Run_info_image.convert_alpha()
+            screen.blit(Run_info_image, (screen_width - 200, 50))
+
+            # event control
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     run = False
@@ -400,7 +490,7 @@ class Module_names(Enum):
 # main
 
 current_module = Module_names.Main_module
-trebuchet = Trebuchet(4, 1, 4, 3, 1, 50, 500)
+trebuchet = Trebuchet(12, 3, 12, 9, 3, 50, 500)
 dev_mode = True
 
 
