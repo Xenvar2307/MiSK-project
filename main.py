@@ -28,6 +28,34 @@ label_x_end = label_input_x + label_width
 input_field_width = 125
 input_field_height = 40
 
+allowed_keys = {
+    pygame.K_0,
+    pygame.K_KP0,
+    pygame.K_1,
+    pygame.K_KP1,
+    pygame.K_2,
+    pygame.K_KP2,
+    pygame.K_3,
+    pygame.K_KP3,
+    pygame.K_4,
+    pygame.K_KP4,
+    pygame.K_5,
+    pygame.K_KP5,
+    pygame.K_6,
+    pygame.K_KP6,
+    pygame.K_7,
+    pygame.K_KP7,
+    pygame.K_8,
+    pygame.K_KP8,
+    pygame.K_9,
+    pygame.K_KP9,
+}
+
+period_keys = {
+    pygame.K_PERIOD,
+    pygame.K_KP_PERIOD,
+}
+
 
 # font
 scale_font = pygame.font.SysFont("Arial", 20)
@@ -648,7 +676,7 @@ class main_module:
                 trebuchet.update(simulation_speed * 1 / fps)
                 simulation_time += simulation_speed * 1 / fps
             # check for new input values for dimentions of trebuchet
-            # TO DO buttons and changing
+            #
             #
             # set scale so that it is visible
 
@@ -840,6 +868,28 @@ class main_module:
                         active_input_field = None
                 else:
                     clicked = False
+
+                if event.type == pygame.KEYDOWN:
+                    # deactivate field on "enter"
+                    if event.key == pygame.K_RETURN or event.key == pygame.K_KP_ENTER:
+                        if active_input_field != None:
+                            active_input_field.active = False
+                            active_input_field = None
+                    # input values to active field
+                    if event.key in allowed_keys:
+                        if active_input_field != None:
+                            active_input_field.text += event.unicode
+                    elif event.key in period_keys and event.unicode == ".":
+                        if active_input_field != None:
+                            if (
+                                "." not in active_input_field.text
+                                and active_input_field.text != ""
+                            ):
+                                active_input_field.text += event.unicode
+                    # delete values from field
+                    if event.key == pygame.K_BACKSPACE:
+                        if active_input_field != None:
+                            active_input_field.text = active_input_field.text[:-1]
 
             # updating display
             pygame.display.update()
