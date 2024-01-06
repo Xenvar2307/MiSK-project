@@ -2,6 +2,7 @@ import pygame
 import math
 from enum import Enum
 from buttons import *
+from input_fields import *
 
 pygame.init()
 
@@ -14,6 +15,19 @@ side_padding = 100
 ground_level = screen_height - side_padding
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("MiSK - project")
+# input fields
+
+lable_input_x = screen_width - 450
+lable_input_y = 150
+lable_width = 300
+lable_height = 40
+lable_y_padding = 10
+lable_y_skip = lable_height + 2 * lable_y_padding
+lable_x_end = lable_input_x + lable_width
+
+input_field_width = 125
+input_field_height = 40
+
 
 # font
 scale_font = pygame.font.SysFont("Times New Roman", 20)
@@ -44,6 +58,27 @@ simulation_running = False
 simulation_speed = 1.0
 simulation_speed_upper_limit = 5.0
 simulation_speed_lower_limit = 0.5  # 0.1 exception
+
+
+def draw_text(surface, text, font, text_col, x, y, width, height):
+    text_image = font.render(text, True, text_col)
+
+    # focus on height if text fits
+    if text_image.get_width() * height / text_image.get_height() < width:
+        text_image = pygame.transform.scale(
+            text_image,
+            (text_image.get_width() * height / text_image.get_height(), height),
+        )
+    else:
+        text_image = pygame.transform.scale(
+            text_image,
+            (
+                width,
+                text_image.get_height() * width / text_image.get_width(),
+            ),
+        )
+
+    surface.blit(text_image, (x, y))
 
 
 def add_points(x, y):
@@ -406,6 +441,7 @@ class main_module:
         global meters_to_pixel_ratio
         meters_to_pixel_ratio = 40
 
+        # create menu buttons
         Run_button = ButtonFactory.factory(
             screen, "Run/Stop Simulation", button_font, screen_width - 200, 0, 200, 50
         )
@@ -416,6 +452,80 @@ class main_module:
         UpX_button = ButtonFactory.factory(
             screen, "+0.5X", button_font, screen_width - 275, 0, 75, 50
         )
+
+        # create input fields
+        Pivot_height_field = BasicInputField(
+            screen,
+            button_font,
+            lable_input_x + lable_width,
+            lable_input_y,
+            input_field_width,
+            input_field_height,
+        )
+        Pivot_height_field.text = str(trebuchet.pivot_height)
+
+        Long_arm_field = BasicInputField(
+            screen,
+            button_font,
+            lable_input_x + lable_width,
+            lable_input_y + lable_y_skip,
+            input_field_width,
+            input_field_height,
+        )
+        Long_arm_field.text = str(trebuchet.long_arm_length)
+
+        Short_arm_field = BasicInputField(
+            screen,
+            button_font,
+            lable_input_x + lable_width,
+            lable_input_y + 2 * lable_y_skip,
+            input_field_width,
+            input_field_height,
+        )
+        Short_arm_field.text = str(trebuchet.short_arm_length)
+
+        Sling_length_field = BasicInputField(
+            screen,
+            button_font,
+            lable_input_x + lable_width,
+            lable_input_y + 3 * lable_y_skip,
+            input_field_width,
+            input_field_height,
+        )
+        Sling_length_field.text = str(trebuchet.sling_length)
+
+        Weight_length_field = BasicInputField(
+            screen,
+            button_font,
+            lable_input_x + lable_width,
+            lable_input_y + 4 * lable_y_skip,
+            input_field_width,
+            input_field_height,
+        )
+        Weight_length_field.text = str(trebuchet.weight_length)
+
+        Projectile_mass_field = BasicInputField(
+            screen,
+            button_font,
+            lable_input_x + lable_width,
+            lable_input_y + 5 * lable_y_skip,
+            input_field_width,
+            input_field_height,
+        )
+        Projectile_mass_field.text = str(trebuchet.projectile_mass)
+
+        Weight_mass_field = BasicInputField(
+            screen,
+            button_font,
+            lable_input_x + lable_width,
+            lable_input_y + 6 * lable_y_skip,
+            input_field_width,
+            input_field_height,
+        )
+        Weight_mass_field.text = str(trebuchet.weight_mass)
+
+        # global changeable
+        active_input_field = None
 
         global simulation_time
         simulation_time = 0.0
@@ -448,6 +558,127 @@ class main_module:
                 elif simulation_speed > simulation_speed_lower_limit:
                     simulation_speed -= 0.5
 
+            # input fields
+            if simulation_time == 0.0:
+                draw_text(
+                    screen,
+                    "Pivot Height (m) = ",
+                    button_font,
+                    white,
+                    lable_input_x,
+                    lable_input_y,
+                    lable_width,
+                    lable_height,
+                )
+                if Pivot_height_field.draw():
+                    if active_input_field != None:
+                        active_input_field.active = False
+                    active_input_field = Pivot_height_field
+                    Pivot_height_field.active = True
+                draw_text(
+                    screen,
+                    "Long Arm (m) = ",
+                    button_font,
+                    white,
+                    lable_input_x,
+                    lable_input_y + 1 * lable_y_skip,
+                    lable_width,
+                    lable_height,
+                )
+                if Long_arm_field.draw():
+                    if active_input_field != None:
+                        active_input_field.active = False
+                    active_input_field = Long_arm_field
+                    Long_arm_field.active = True
+
+                draw_text(
+                    screen,
+                    "Short Arm (m) = ",
+                    button_font,
+                    white,
+                    lable_input_x,
+                    lable_input_y + 2 * lable_y_skip,
+                    lable_width,
+                    lable_height,
+                )
+                if Short_arm_field.draw():
+                    if active_input_field != None:
+                        active_input_field.active = False
+                    active_input_field = Short_arm_field
+                    Short_arm_field.active = True
+
+                draw_text(
+                    screen,
+                    "Sling Length (m) = ",
+                    button_font,
+                    white,
+                    lable_input_x,
+                    lable_input_y + 3 * lable_y_skip,
+                    lable_width,
+                    lable_height,
+                )
+                if Sling_length_field.draw():
+                    if active_input_field != None:
+                        active_input_field.active = False
+                    active_input_field = Sling_length_field
+                    Sling_length_field.active = True
+
+                draw_text(
+                    screen,
+                    "Weight Lenght (m) = ",
+                    button_font,
+                    white,
+                    lable_input_x,
+                    lable_input_y + 4 * lable_y_skip,
+                    lable_width,
+                    lable_height,
+                )
+                if Weight_length_field.draw():
+                    if active_input_field != None:
+                        active_input_field.active = False
+                    active_input_field = Weight_length_field
+                    Weight_length_field.active = True
+
+                draw_text(
+                    screen,
+                    "Projectile Mass (kg) = ",
+                    button_font,
+                    white,
+                    lable_input_x,
+                    lable_input_y + 5 * lable_y_skip,
+                    lable_width,
+                    lable_height,
+                )
+                if Projectile_mass_field.draw():
+                    if active_input_field != None:
+                        active_input_field.active = False
+                    active_input_field = Projectile_mass_field
+                    Projectile_mass_field.active = True
+
+                draw_text(
+                    screen,
+                    "Counterweight (kg) = ",
+                    button_font,
+                    white,
+                    lable_input_x,
+                    lable_input_y + 6 * lable_y_skip,
+                    lable_width,
+                    lable_height,
+                )
+                if Weight_mass_field.draw():
+                    if active_input_field != None:
+                        active_input_field.active = False
+                    active_input_field = Weight_mass_field
+                    Weight_mass_field.active = True
+
+                # mark down active field
+                if active_input_field != None:
+                    pygame.draw.rect(
+                        screen, (247, 0, 255), active_input_field.rect, width=4
+                    )
+
+            # check for invalid values TO DO
+
             # running info
             temp_cute_time = round(simulation_time, 2)
             Run_info_image = scale_font.render(
@@ -464,6 +695,10 @@ class main_module:
                     Next_module = Module_names.Exit_app
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     clicked = True
+                    # deactivate input field
+                    if active_input_field != None:
+                        active_input_field.active = False
+                        active_input_field = None
                 else:
                     clicked = False
 
