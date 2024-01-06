@@ -766,7 +766,7 @@ class main_module:
             )
 
             draw_scale()
-            if not simulation_running:
+            if not simulation_running and simulation_time == 0.0:
                 trebuchet.reset()
             trebuchet.draw(dev_mode)
 
