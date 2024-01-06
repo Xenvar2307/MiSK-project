@@ -63,6 +63,7 @@ time_info_font = pygame.font.SysFont("Arial", 27)
 button_font = pygame.font.SysFont("Arial", 30)
 
 label_font = pygame.font.SysFont("Arial", 33)
+alert_font = pygame.font.SysFont("Arial", 20)
 
 
 # frames
@@ -76,6 +77,7 @@ brown = (205, 133, 63)
 light_grey = (220, 220, 220)
 grey = (169, 169, 169)
 dark_grey = (112, 128, 144)
+red = (255, 0, 0)
 
 ButtonFactory = ButtonFactory_Standard()
 
@@ -90,6 +92,8 @@ simulation_running = False
 simulation_speed = 1.0
 simulation_speed_upper_limit = 5.0
 simulation_speed_lower_limit = 0.5  # 0.1 exception
+
+alert_list = []
 
 
 def draw_text(surface, text, font, text_col, x, y, width, height):
@@ -116,6 +120,21 @@ def draw_text(surface, text, font, text_col, x, y, width, height):
 def draw_raw_text(surface, text, font, text_col, x, y, tempwidth, tempheight):
     text_image = font.render(text, True, text_col)
     surface.blit(text_image, (x, y))
+
+
+def print_alerts():
+    for i, alert in enumerate(alert_list):
+        for j, text in enumerate(alert):
+            draw_raw_text(
+                screen,
+                text,
+                alert_font,
+                red,
+                label_input_x,
+                label_input_y + 7 * label_y_skip + i * 50 + j * 25,
+                0,
+                0,
+            )
 
 
 def add_points(x, y):
@@ -189,6 +208,7 @@ def draw_scale():
     while count_lines <= lines_to_draw:
         meters += step
         start += step * meters_to_pixel_ratio
+        print(start)
         pygame.draw.line(
             screen,
             white,
@@ -449,21 +469,17 @@ class Trebuchet:
         )
 
         # projectile
-        pygame.draw.circle(
-            screen, grey, self.projectile_pos, int(0.2 * meters_to_pixel_ratio)
-        )
+        pygame.draw.circle(screen, grey, self.projectile_pos, 10)
         pygame.draw.circle(
             screen,
             light_grey,
             self.projectile_pos,
-            int(0.2 * meters_to_pixel_ratio),
+            10,
             width=2,
         )
 
         # weight
-        pygame.draw.circle(
-            screen, dark_grey, self.weight_point, int(0.5 * meters_to_pixel_ratio)
-        )
+        pygame.draw.circle(screen, dark_grey, self.weight_point, 25)
 
     def change_base_point(self, tuple):
         self.base_point = tuple
@@ -571,7 +587,6 @@ class main_module:
         Next_module = Module_names.Exit_app
 
         global meters_to_pixel_ratio
-        meters_to_pixel_ratio = 40
 
         # create menu buttons
         Run_button = ButtonFactory.factory(
@@ -588,6 +603,7 @@ class main_module:
         UpX_button = ButtonFactory.factory(
             screen, "+0.5X", button_font, screen_width - 275, 0, 75, 50
         )
+        Input_Fields = []
 
         # create input fields
         Pivot_height_field = BasicInputField(
@@ -599,6 +615,7 @@ class main_module:
             input_field_height,
         )
         Pivot_height_field.text = str(trebuchet.pivot_height)
+        Input_Fields.append(Pivot_height_field)
 
         Long_arm_field = BasicInputField(
             screen,
@@ -609,6 +626,7 @@ class main_module:
             input_field_height,
         )
         Long_arm_field.text = str(trebuchet.long_arm_length)
+        Input_Fields.append(Long_arm_field)
 
         Short_arm_field = BasicInputField(
             screen,
@@ -619,6 +637,7 @@ class main_module:
             input_field_height,
         )
         Short_arm_field.text = str(trebuchet.short_arm_length)
+        Input_Fields.append(Short_arm_field)
 
         Sling_length_field = BasicInputField(
             screen,
@@ -629,6 +648,7 @@ class main_module:
             input_field_height,
         )
         Sling_length_field.text = str(trebuchet.sling_length)
+        Input_Fields.append(Sling_length_field)
 
         Weight_length_field = BasicInputField(
             screen,
@@ -639,6 +659,7 @@ class main_module:
             input_field_height,
         )
         Weight_length_field.text = str(trebuchet.weight_length)
+        Input_Fields.append(Weight_length_field)
 
         Projectile_mass_field = BasicInputField(
             screen,
@@ -649,6 +670,7 @@ class main_module:
             input_field_height,
         )
         Projectile_mass_field.text = str(trebuchet.projectile_mass)
+        Input_Fields.append(Projectile_mass_field)
 
         Weight_mass_field = BasicInputField(
             screen,
@@ -659,6 +681,7 @@ class main_module:
             input_field_height,
         )
         Weight_mass_field.text = str(trebuchet.weight_mass)
+        Input_Fields.append(Weight_mass_field)
 
         # global changeable
         active_input_field = None
@@ -675,26 +698,77 @@ class main_module:
             if simulation_running:
                 trebuchet.update(simulation_speed * 1 / fps)
                 simulation_time += simulation_speed * 1 / fps
-            # check for new input values for dimentions of trebuchet
-            #
-            #
-            # set scale so that it is visible
 
-            meters_to_pixel_ratio = int(
-                (screen_height - 2 * side_padding)
-                / (
-                    trebuchet.pivot_height
-                    + trebuchet.long_arm_length
-                    + trebuchet.sling_length
-                )
-            )
+            # set scale so that it is visible
 
             # stable or changed images
             reset_screen()
-            draw_scale()
 
             # draw the trebuchet itself with current scale
-            trebuchet.update(0)
+            valid = True
+            global alert_list
+            alert_list = []
+            # check for conflicts
+            if not simulation_running:
+                # check if they are empty
+                # clear invalid checks
+                for inputfield in Input_Fields:
+                    inputfield.invalid = False
+
+                for inputfield in Input_Fields:
+                    if inputfield.text == "":
+                        inputfield.invalid = True
+                        valid = False
+                # check values
+                if valid:
+                    if not (
+                        float(Short_arm_field.text) + float(Weight_length_field.text)
+                        < float(Pivot_height_field.text)
+                    ):
+                        alert_list.append(
+                            [
+                                "Conflict: Short Arm + Weight Lenght needs to be shorter",
+                                "than Pivot Height",
+                            ]
+                        )
+                        Short_arm_field.invalid = True
+                        Weight_length_field.invalid = True
+                        Pivot_height_field.invalid = True
+                        valid = False
+                    if not (
+                        float(Long_arm_field.text) > float(Pivot_height_field.text)
+                    ):
+                        alert_list.append(
+                            [
+                                "Conflict: Longer Arm needs to be longer than Pivot Height"
+                            ]
+                        )
+                        Long_arm_field.invalid = True
+                        Pivot_height_field.invalid = True
+                        valid = False
+                else:
+                    alert_list.append(["Error: Please, fill all the values"])
+
+            print_alerts()
+            # check for new input values for dimentions of trebuchet
+            if not simulation_running and valid and simulation_time == 0.0:
+                trebuchet.pivot_height = float(Pivot_height_field.text)
+                trebuchet.long_arm_length = float(Long_arm_field.text)
+                trebuchet.short_arm_length = float(Short_arm_field.text)
+                trebuchet.sling_length = float(Sling_length_field.text)
+                trebuchet.weight_length = float(Weight_length_field.text)
+                trebuchet.projectile_mass = float(Projectile_mass_field.text)
+                trebuchet.weight_mass = float(Weight_mass_field.text)
+
+            meters_to_pixel_ratio = (screen_height - 2 * side_padding) / (
+                trebuchet.pivot_height
+                + trebuchet.long_arm_length
+                + trebuchet.sling_length
+            )
+
+            draw_scale()
+            if not simulation_running:
+                trebuchet.reset()
             trebuchet.draw(dev_mode)
 
             # buttons for running and speed control
@@ -703,7 +777,7 @@ class main_module:
             else:
                 Run_button_text = button_font.render("Run Simulation", True, white)
 
-            if Run_button.draw():
+            if Run_button.draw() and valid:
                 simulation_running = not simulation_running
             temp_rect = Run_button_text.get_rect()
             temp_rect.center = Run_button.rect.center
