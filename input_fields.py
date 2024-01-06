@@ -24,30 +24,34 @@ class BasicInputField:
             pygame.draw.rect(self.surface, (153, 153, 0), self.rect, width=3)
         # draw text on TO DO
         text_image = self.font.render(self.text, True, (0, 0, 0))
-        if (
-            text_image.get_width() * self.height / text_image.get_height()
-            < self.width - 4 * int(self.height / 16)
-        ):
-            text_image = pygame.transform.scale(
-                text_image,
-                (
-                    text_image.get_width() * self.height / text_image.get_height(),
-                    self.height,
-                ),
-            )
-        else:
-            text_image = pygame.transform.scale(
-                text_image,
-                (
-                    self.width - 4 * int(self.height / 16),
-                    text_image.get_height()
-                    * (self.width - 4 * int(self.height / 16))
-                    / text_image.get_width(),
-                ),
-            )
+        # if (
+        #    text_image.get_width() * self.height / text_image.get_height()
+        #    < self.width - 4 * int(self.height / 16)
+        # ):
+        #    text_image = pygame.transform.scale(
+        #        text_image,
+        #        (
+        #           text_image.get_width() * self.height / text_image.get_height(),
+        #          self.height,
+        #     ),
+        # )
+        # else:
+        #    text_image = pygame.transform.scale(
+        #        text_image,
+        #        (
+        #            self.width - 4 * int(self.height / 16),
+        #            text_image.get_height()
+        #           * (self.width - 4 * int(self.height / 16))
+        #           / text_image.get_width(),
+        #       ),
+        #   )
 
         self.surface.blit(
-            text_image, (self.x + self.width - text_image.get_width() - 10, self.y)
+            text_image,
+            (
+                self.x + self.width - text_image.get_width() - 10,
+                self.y + self.height - text_image.get_height(),
+            ),
         )
 
         # return value, tells us if we should act

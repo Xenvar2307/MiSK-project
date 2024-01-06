@@ -57,23 +57,27 @@ class ButtonFactory_Standard:
         text_image = font.render(text, True, (255, 255, 255))
 
         # focus on height if text fits
-        if text_image.get_width() * height / text_image.get_height() < width - 4 * int(
-            height / 16
-        ):
-            text_image = pygame.transform.scale(
-                text_image,
-                (text_image.get_width() * height / text_image.get_height(), height),
-            )
-        else:
-            text_image = pygame.transform.scale(
-                text_image,
-                (
-                    width - 4 * int(height / 16),
-                    text_image.get_height()
-                    * (width - 4 * int(height / 16))
-                    / text_image.get_width(),
-                ),
-            )
+        # if (
+        #    text_image.get_width() * self.height / text_image.get_height()
+        #    < self.width - 4 * int(self.height / 16)
+        # ):
+        #    text_image = pygame.transform.scale(
+        #        text_image,
+        #        (
+        #           text_image.get_width() * self.height / text_image.get_height(),
+        #          self.height,
+        #     ),
+        # )
+        # else:
+        #    text_image = pygame.transform.scale(
+        #        text_image,
+        #        (
+        #            self.width - 4 * int(self.height / 16),
+        #            text_image.get_height()
+        #           * (self.width - 4 * int(self.height / 16))
+        #           / text_image.get_width(),
+        #       ),
+        #   )
 
         # throw text on image
         background.blit(

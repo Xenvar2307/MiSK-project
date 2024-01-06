@@ -17,13 +17,13 @@ screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("MiSK - project")
 # input fields
 
-lable_input_x = screen_width - 450
-lable_input_y = 150
-lable_width = 300
-lable_height = 40
-lable_y_padding = 10
-lable_y_skip = lable_height + 2 * lable_y_padding
-lable_x_end = lable_input_x + lable_width
+label_input_x = screen_width - 450
+label_input_y = 150
+label_width = 300
+label_height = 40
+label_y_padding = 10
+label_y_skip = label_height + 2 * label_y_padding
+label_x_end = label_input_x + label_width
 
 input_field_width = 125
 input_field_height = 40
@@ -31,8 +31,11 @@ input_field_height = 40
 
 # font
 scale_font = pygame.font.SysFont("Arial", 20)
-time_info_font = pygame.font.SysFont("Arial", 25)
-button_font = pygame.font.SysFont("Arial", 200)
+time_info_font = pygame.font.SysFont("Arial", 27)
+button_font = pygame.font.SysFont("Arial", 30)
+
+label_font = pygame.font.SysFont("Arial", 33)
+
 
 # frames
 fps = 60
@@ -79,6 +82,11 @@ def draw_text(surface, text, font, text_col, x, y, width, height):
             ),
         )
 
+    surface.blit(text_image, (x, y))
+
+
+def draw_raw_text(surface, text, font, text_col, x, y, tempwidth, tempheight):
+    text_image = font.render(text, True, text_col)
     surface.blit(text_image, (x, y))
 
 
@@ -528,6 +536,7 @@ def reset_simulation(trebuchet: Trebuchet):
 class main_module:
     def run(self, dev_mode: bool, trebuchet: Trebuchet):
         # event control
+        change_frame = clock.tick()
         run = True
         global simulation_running
         simulation_running = False
@@ -538,7 +547,7 @@ class main_module:
 
         # create menu buttons
         Run_button = ButtonFactory.factory(
-            screen, "Run/Stop Simulation", button_font, screen_width - 200, 0, 200, 50
+            screen, "", button_font, screen_width - 200, 0, 200, 50
         )
 
         Reset_button = ButtonFactory.factory(
@@ -555,9 +564,9 @@ class main_module:
         # create input fields
         Pivot_height_field = BasicInputField(
             screen,
-            button_font,
-            lable_input_x + lable_width,
-            lable_input_y,
+            label_font,
+            label_input_x + label_width,
+            label_input_y,
             input_field_width,
             input_field_height,
         )
@@ -565,9 +574,9 @@ class main_module:
 
         Long_arm_field = BasicInputField(
             screen,
-            button_font,
-            lable_input_x + lable_width,
-            lable_input_y + lable_y_skip,
+            label_font,
+            label_input_x + label_width,
+            label_input_y + label_y_skip,
             input_field_width,
             input_field_height,
         )
@@ -575,9 +584,9 @@ class main_module:
 
         Short_arm_field = BasicInputField(
             screen,
-            button_font,
-            lable_input_x + lable_width,
-            lable_input_y + 2 * lable_y_skip,
+            label_font,
+            label_input_x + label_width,
+            label_input_y + 2 * label_y_skip,
             input_field_width,
             input_field_height,
         )
@@ -585,9 +594,9 @@ class main_module:
 
         Sling_length_field = BasicInputField(
             screen,
-            button_font,
-            lable_input_x + lable_width,
-            lable_input_y + 3 * lable_y_skip,
+            label_font,
+            label_input_x + label_width,
+            label_input_y + 3 * label_y_skip,
             input_field_width,
             input_field_height,
         )
@@ -595,9 +604,9 @@ class main_module:
 
         Weight_length_field = BasicInputField(
             screen,
-            button_font,
-            lable_input_x + lable_width,
-            lable_input_y + 4 * lable_y_skip,
+            label_font,
+            label_input_x + label_width,
+            label_input_y + 4 * label_y_skip,
             input_field_width,
             input_field_height,
         )
@@ -605,9 +614,9 @@ class main_module:
 
         Projectile_mass_field = BasicInputField(
             screen,
-            button_font,
-            lable_input_x + lable_width,
-            lable_input_y + 5 * lable_y_skip,
+            label_font,
+            label_input_x + label_width,
+            label_input_y + 5 * label_y_skip,
             input_field_width,
             input_field_height,
         )
@@ -615,9 +624,9 @@ class main_module:
 
         Weight_mass_field = BasicInputField(
             screen,
-            button_font,
-            lable_input_x + lable_width,
-            lable_input_y + 6 * lable_y_skip,
+            label_font,
+            label_input_x + label_width,
+            label_input_y + 6 * label_y_skip,
             input_field_width,
             input_field_height,
         )
@@ -661,11 +670,17 @@ class main_module:
             trebuchet.draw(dev_mode)
 
             # buttons for running and speed control
+            if simulation_running:
+                Run_button_text = button_font.render("Stop Simulation", True, white)
+            else:
+                Run_button_text = button_font.render("Run Simulation", True, white)
 
             if Run_button.draw():
-                simulation_running = (
-                    not simulation_running
-                )  # change state to negation of current state
+                simulation_running = not simulation_running
+            temp_rect = Run_button_text.get_rect()
+            temp_rect.center = Run_button.rect.center
+
+            screen.blit(Run_button_text, temp_rect)
 
             if simulation_time > 0.0:
                 if Reset_button.draw():
@@ -684,30 +699,30 @@ class main_module:
 
             # input fields
             if simulation_time == 0.0:
-                draw_text(
+                draw_raw_text(
                     screen,
                     "Pivot Height (m) = ",
-                    button_font,
+                    label_font,
                     white,
-                    lable_input_x,
-                    lable_input_y,
-                    lable_width,
-                    lable_height,
+                    label_input_x,
+                    label_input_y,
+                    label_width,
+                    label_height,
                 )
                 if Pivot_height_field.draw():
                     if active_input_field != None:
                         active_input_field.active = False
                     active_input_field = Pivot_height_field
                     Pivot_height_field.active = True
-                draw_text(
+                draw_raw_text(
                     screen,
                     "Long Arm (m) = ",
-                    button_font,
+                    label_font,
                     white,
-                    lable_input_x,
-                    lable_input_y + 1 * lable_y_skip,
-                    lable_width,
-                    lable_height,
+                    label_input_x,
+                    label_input_y + 1 * label_y_skip,
+                    label_width,
+                    label_height,
                 )
                 if Long_arm_field.draw():
                     if active_input_field != None:
@@ -715,15 +730,15 @@ class main_module:
                     active_input_field = Long_arm_field
                     Long_arm_field.active = True
 
-                draw_text(
+                draw_raw_text(
                     screen,
                     "Short Arm (m) = ",
-                    button_font,
+                    label_font,
                     white,
-                    lable_input_x,
-                    lable_input_y + 2 * lable_y_skip,
-                    lable_width,
-                    lable_height,
+                    label_input_x,
+                    label_input_y + 2 * label_y_skip,
+                    label_width,
+                    label_height,
                 )
                 if Short_arm_field.draw():
                     if active_input_field != None:
@@ -731,15 +746,15 @@ class main_module:
                     active_input_field = Short_arm_field
                     Short_arm_field.active = True
 
-                draw_text(
+                draw_raw_text(
                     screen,
                     "Sling Length (m) = ",
-                    button_font,
+                    label_font,
                     white,
-                    lable_input_x,
-                    lable_input_y + 3 * lable_y_skip,
-                    lable_width,
-                    lable_height,
+                    label_input_x,
+                    label_input_y + 3 * label_y_skip,
+                    label_width,
+                    label_height,
                 )
                 if Sling_length_field.draw():
                     if active_input_field != None:
@@ -747,15 +762,15 @@ class main_module:
                     active_input_field = Sling_length_field
                     Sling_length_field.active = True
 
-                draw_text(
+                draw_raw_text(
                     screen,
                     "Weight Lenght (m) = ",
-                    button_font,
+                    label_font,
                     white,
-                    lable_input_x,
-                    lable_input_y + 4 * lable_y_skip,
-                    lable_width,
-                    lable_height,
+                    label_input_x,
+                    label_input_y + 4 * label_y_skip,
+                    label_width,
+                    label_height,
                 )
                 if Weight_length_field.draw():
                     if active_input_field != None:
@@ -763,15 +778,15 @@ class main_module:
                     active_input_field = Weight_length_field
                     Weight_length_field.active = True
 
-                draw_text(
+                draw_raw_text(
                     screen,
                     "Projectile Mass (kg) = ",
-                    button_font,
+                    label_font,
                     white,
-                    lable_input_x,
-                    lable_input_y + 5 * lable_y_skip,
-                    lable_width,
-                    lable_height,
+                    label_input_x,
+                    label_input_y + 5 * label_y_skip,
+                    label_width,
+                    label_height,
                 )
                 if Projectile_mass_field.draw():
                     if active_input_field != None:
@@ -779,15 +794,15 @@ class main_module:
                     active_input_field = Projectile_mass_field
                     Projectile_mass_field.active = True
 
-                draw_text(
+                draw_raw_text(
                     screen,
                     "Counterweight (kg) = ",
-                    button_font,
+                    label_font,
                     white,
-                    lable_input_x,
-                    lable_input_y + 6 * lable_y_skip,
-                    lable_width,
-                    lable_height,
+                    label_input_x,
+                    label_input_y + 6 * label_y_skip,
+                    label_width,
+                    label_height,
                 )
                 if Weight_mass_field.draw():
                     if active_input_field != None:
@@ -806,11 +821,11 @@ class main_module:
             # running info
             temp_cute_time = round(simulation_time, 2)
             Run_info_image = time_info_font.render(
-                f"Speed: {simulation_speed}  Time: {temp_cute_time}", True, white
+                f"Speed: {simulation_speed}  Time(s): {temp_cute_time}", True, white
             )
 
             Run_info_image.convert_alpha()
-            screen.blit(Run_info_image, (10, 10))
+            screen.blit(Run_info_image, (screen_width - 375 - 250, 10))
 
             # event control
             for event in pygame.event.get():
