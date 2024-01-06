@@ -208,7 +208,6 @@ def draw_scale():
     while count_lines <= lines_to_draw:
         meters += step
         start += step * meters_to_pixel_ratio
-        print(start)
         pygame.draw.line(
             screen,
             white,
