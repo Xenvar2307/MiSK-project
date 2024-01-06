@@ -715,7 +715,7 @@ class main_module:
                     inputfield.invalid = False
 
                 for inputfield in Input_Fields:
-                    if inputfield.text == "":
+                    if inputfield.text == "" or float(inputfield.text) == 0.0:
                         inputfield.invalid = True
                         valid = False
                 # check values
