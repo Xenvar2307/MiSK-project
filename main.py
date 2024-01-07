@@ -315,6 +315,7 @@ class Trebuchet:
 
     def update_points_based_on_angles_and_basepoint(self):
         # ustawianie punktów do pozycji trebusza, zawsze bo skala sie moze zmienic
+        global meters_to_pixel_ratio
         self.pivot_point = add_points(
             self.base_point, (0, -meters_to_pixel_ratio * self.pivot_height)
         )
@@ -382,6 +383,7 @@ class Trebuchet:
         )
 
     def update_projectile_position(self, time_passed):
+        global meters_to_pixel_ratio
         if self.holding_projectile:
             self.projectile_pos = self.end_sling
         else:
@@ -401,6 +403,7 @@ class Trebuchet:
             # update to change position when shooting
 
     def update_state_angles(self, time_passed):
+        global meters_to_pixel_ratio
         i = 1 / (fps * 10)
         temp = 0
         while temp < time_passed:
@@ -508,11 +511,8 @@ class Trebuchet:
             self.arm_weight_angle += self.arm_weight_angle_change * i
             self.arm_sling_angle += self.arm_sling_angle_change * i
 
-    def go_to_projectile_phase(self):
-        self.move_base_point((side_padding, screen_height - side_padding))
-        self.holding_projectile = False
-
     def calculate_shot_info(self):
+        global meters_to_pixel_ratio
         self.release_time = simulation_time
         self.Beta = -self.long_arm_length * math.cos(
             self.pivot_arm_angle
@@ -552,11 +552,21 @@ class Trebuchet:
             self.Beta**2 + (-g * self.hit_ground_time * self.Gamma) ** 2
         )
 
+    def go_to_projectile_phase(self):
+        global meters_to_pixel_ratio
+        self.calculate_shot_info()
+        self.move_base_point((side_padding, screen_height - side_padding))
+        update_ratio(False)
+        self.update_points_based_on_angles_and_basepoint()
+        self.update_projectile_position(0)
+
+        self.holding_projectile = False
+
     def update(self, time_passed):
         # release control
+        global meters_to_pixel_ratio
         if self.pivot_arm_angle < release_angle and self.holding_projectile:
             self.go_to_projectile_phase()
-            self.calculate_shot_info()
 
         # jezeli przed strzalem, rusz trebusz
         if self.holding_projectile:
@@ -610,11 +620,10 @@ class Trebuchet:
         )
 
         # weight
-        pygame.draw.circle(screen, dark_grey, self.weight_point, 25)
+        pygame.draw.circle(screen, dark_grey, self.weight_point, 5)
 
     def move_base_point(self, tuple):
         self.base_point = tuple
-        self.update_points_based_on_angles_and_basepoint()
 
     def reset(self):
         # update part
@@ -649,16 +658,29 @@ def reset_simulation(trebuchet: Trebuchet):
     trebuchet.reset()
 
 
+def update_ratio(stage_1):
+    global meters_to_pixel_ratio
+    if stage_1:
+        meters_to_pixel_ratio = (screen_height - 2 * side_padding) / (
+            trebuchet.pivot_height + trebuchet.long_arm_length + trebuchet.sling_length
+        )
+    else:
+        meters_to_pixel_ratio = min(
+            ((screen_height - 2 * side_padding) / trebuchet.peak),
+            ((screen_width - 2 * side_padding) / trebuchet.range),
+        )
+
+
 class main_module:
     def run(self, dev_mode: bool, trebuchet: Trebuchet):
         # event control
-        change_frame = clock.tick()
         run = True
+        global meters_to_pixel_ratio
+        global simulation_time
+        global simulation_speed
         global simulation_running
         simulation_running = False
         Next_module = Module_names.Exit_app
-
-        global meters_to_pixel_ratio
 
         # create menu buttons
         Run_button = ButtonFactory.factory(
@@ -758,11 +780,6 @@ class main_module:
         # global changeable
         active_input_field = None
 
-        global simulation_time
-        # simulation_time = 0.0
-        global simulation_speed
-        # simulation_speed = 1.0
-
         while run:
             # fps control
             clock.tick(fps)
@@ -770,11 +787,6 @@ class main_module:
             if simulation_running:
                 trebuchet.update(simulation_speed * 1 / fps)
                 simulation_time += simulation_speed * 1 / fps
-
-            # set scale so that it is visible
-
-            # stable or changed images
-            reset_screen()
 
             # draw the trebuchet itself with current scale
             valid = True
@@ -821,7 +833,6 @@ class main_module:
                 else:
                     alert_list.append(["Error: Please, fill all the values"])
 
-            print_alerts()
             # check for new input values for dimentions of trebuchet
             if not simulation_running and valid and simulation_time == 0.0:
                 trebuchet.pivot_height = float(Pivot_height_field.text)
@@ -832,22 +843,8 @@ class main_module:
                 trebuchet.projectile_mass = float(Projectile_mass_field.text)
                 trebuchet.weight_mass = float(Weight_mass_field.text)
 
-            if trebuchet.holding_projectile:
-                meters_to_pixel_ratio = (screen_height - 2 * side_padding) / (
-                    trebuchet.pivot_height
-                    + trebuchet.long_arm_length
-                    + trebuchet.sling_length
-                )
-            else:
-                meters_to_pixel_ratio = min(
-                    ((screen_height - 2 * side_padding) / trebuchet.peak),
-                    ((screen_width - 2 * side_padding) / trebuchet.range),
-                )
-
-            draw_scale()
             if not simulation_running and simulation_time == 0.0:
                 trebuchet.reset()
-            trebuchet.draw(dev_mode)
 
             # buttons for running and speed control
             if simulation_running:
@@ -855,6 +852,16 @@ class main_module:
             else:
                 Run_button_text = button_font.render("Run Simulation", True, white)
 
+            update_ratio(trebuchet.holding_projectile)
+            # drawing
+            # stable or changed images
+            reset_screen()
+            print_alerts()
+            draw_scale()
+
+            trebuchet.draw(dev_mode)
+
+            # Run button
             if Run_button.draw() and valid:
                 simulation_running = not simulation_running
             temp_rect = Run_button_text.get_rect()
@@ -862,10 +869,12 @@ class main_module:
 
             screen.blit(Run_button_text, temp_rect)
 
+            # Reset Button
             if simulation_time > 0.0:
                 if Reset_button.draw():
                     reset_simulation(trebuchet)
 
+            # Time Buttons
             if UpX_button.draw():
                 if simulation_speed == 0.1:
                     simulation_speed = 0.5
@@ -996,8 +1005,6 @@ class main_module:
                         screen, (247, 0, 255), active_input_field.rect, width=4
                     )
 
-            # check for invalid values TO DO
-
             # running info
             temp_cute_time = round(simulation_time, 2)
             Run_info_image = time_info_font.render(
@@ -1007,7 +1014,7 @@ class main_module:
             Run_info_image.convert_alpha()
             screen.blit(Run_info_image, (screen_width - 375 - 250, 10))
 
-            # event control
+            # Event control
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     run = False
