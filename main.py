@@ -228,6 +228,7 @@ class Trebuchet:
         self.weight_mass = weight_mass
         # setting starter variables
         self.holding_projectile = True
+        self.projectile_landed = False
         self.release_time = 0.0
 
         # update part
@@ -400,6 +401,12 @@ class Trebuchet:
                         * (-g * (simulation_time - self.release_time) + self.Gamma),
                     ),
                 )
+                if (
+                    self.projectile_pos[1] > ground_level
+                ):  # coordinates in pygame y is raising down not up
+                    self.projectile_landed = True
+                    temp = time_passed
+
             # update to change position when shooting
 
     def update_state_angles(self, time_passed):
@@ -573,7 +580,8 @@ class Trebuchet:
             self.update_state_angles(time_passed)
 
         self.update_points_based_on_angles_and_basepoint()
-        self.update_projectile_position(time_passed)
+        if not self.projectile_landed:
+            self.update_projectile_position(time_passed)
 
     def calculate_weight_R(self):
         return max(
@@ -661,6 +669,7 @@ class Trebuchet:
         self.arm_weight_angle_change = 0
 
         self.holding_projectile = True
+        self.projectile_landed = False
 
         # state variables, angles
         self.pivot_arm_angle = (
@@ -1041,7 +1050,7 @@ class main_module:
             )
 
             Run_info_image.convert_alpha()
-            screen.blit(Run_info_image, (screen_width - 450 - 300, 10))
+            screen.blit(Run_info_image, (screen_width - 450 - 325, 10))
 
             # Event control
             for event in pygame.event.get():
