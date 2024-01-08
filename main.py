@@ -19,7 +19,7 @@ button_font = pygame.font.SysFont("Arial", 30)
 
 label_font = pygame.font.SysFont("Arial", 33)
 alert_font = pygame.font.SysFont("Arial", 20)
-print(label_font.size("Counterweight(kg) ="))
+print(label_font.size("Counterweight (kg) ="))
 
 # frames
 fps = 60
@@ -69,7 +69,6 @@ def draw_text(surface, text, font, text_col, x, y, width, height):
 
 def draw_raw_text(surface, text, font, text_col, x, y, tempwidth, tempheight):
     text_image = font.render(text, True, text_col)
-    # print(text_image.get_width())
     surface.blit(text_image, (x, y))
 
 
@@ -714,18 +713,18 @@ class main_module:
 
         # create menu buttons
         Run_button = ButtonFactory.factory(
-            screen, "", button_font, screen_width - 200, 0, 200, 50
+            screen, "", button_font, screen_width - 250, 0, 250, 50
         )
 
         Reset_button = ButtonFactory.factory(
-            screen, "Reset Simulation", button_font, screen_width - 200, 50, 200, 50
+            screen, "Reset Simulation", button_font, screen_width - 250, 50, 250, 50
         )
 
         DownX_button = ButtonFactory.factory(
-            screen, "-0.5X", button_font, screen_width - 350, 0, 75, 50
+            screen, "-0.5X", button_font, screen_width - 450, 0, 100, 50
         )
         UpX_button = ButtonFactory.factory(
-            screen, "+0.5X", button_font, screen_width - 275, 0, 75, 50
+            screen, "+0.5X", button_font, screen_width - 350, 0, 100, 50
         )
         Input_Fields = []
 
@@ -1042,7 +1041,7 @@ class main_module:
             )
 
             Run_info_image.convert_alpha()
-            screen.blit(Run_info_image, (screen_width - 375 - 250, 10))
+            screen.blit(Run_info_image, (screen_width - 450 - 300, 10))
 
             # Event control
             for event in pygame.event.get():

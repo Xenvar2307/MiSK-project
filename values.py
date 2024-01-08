@@ -12,9 +12,9 @@ side_padding = 100
 ground_level = screen_height - side_padding
 
 # label sizes
-label_input_x = screen_width - 450
+label_input_x = screen_width - 500
 label_input_y = 150
-label_width = 300
+label_width = 350
 label_height = 40
 label_y_padding = 10
 label_y_skip = label_height + 2 * label_y_padding
@@ -81,4 +81,12 @@ sizes on laptop
 294
 316
 304
+sizes on PC
+221
+189
+194
+224
+248
+265
+255
 """
