@@ -19,6 +19,7 @@ button_font = pygame.font.SysFont("Arial", 30)
 
 label_font = pygame.font.SysFont("Arial", 33)
 alert_font = pygame.font.SysFont("Arial", 20)
+print(label_font.size("Counterweight(kg) ="))
 
 # frames
 fps = 60
@@ -32,7 +33,6 @@ meters_to_pixel_ratio = 40
 # trebuchet control
 release_angle = math.pi / 4  # 45 degrees
 # trebuchet style MOVE TO CLASS
-trebuchet_thickness = 5
 
 # simulation data
 simulation_time = 0.0
@@ -69,6 +69,7 @@ def draw_text(surface, text, font, text_col, x, y, width, height):
 
 def draw_raw_text(surface, text, font, text_col, x, y, tempwidth, tempheight):
     text_image = font.render(text, True, text_col)
+    # print(text_image.get_width())
     surface.blit(text_image, (x, y))
 
 
@@ -575,6 +576,31 @@ class Trebuchet:
         self.update_points_based_on_angles_and_basepoint()
         self.update_projectile_position(time_passed)
 
+    def calculate_weight_R(self):
+        return max(
+            min_weight_radius,
+            meters_to_pixel_ratio
+            * round(
+                (3 * self.weight_mass / (4 * weight_density * math.pi)) ** (1.0 / 3.0)
+            ),
+        )
+
+    def calculate_projectile_R(self):
+        return max(
+            min_projectile_radius,
+            meters_to_pixel_ratio
+            * round(
+                (3 * self.projectile_mass / (4 * projectile_density * math.pi))
+                ** (1.0 / 3.0)
+            ),
+        )
+
+    def calculate_trebuchet_thickness(self):
+        return max(
+            min_trebuchet_thickness,
+            round(meters_to_pixel_ratio * meters_trebuchet_thickness),
+        )
+
     def draw(self, subtitles):
         # drawing lines between points
         pygame.draw.line(
@@ -582,7 +608,7 @@ class Trebuchet:
             brown,
             to_int(self.base_point),
             to_int(self.pivot_point),
-            width=int(trebuchet_thickness),
+            width=int(self.calculate_trebuchet_thickness()),
         )
 
         pygame.draw.line(
@@ -590,7 +616,7 @@ class Trebuchet:
             brown,
             to_int(self.end_short_arm),
             to_int(self.end_long_arm),
-            width=int(trebuchet_thickness),
+            width=int(self.calculate_trebuchet_thickness()),
         )
 
         pygame.draw.line(
@@ -598,7 +624,7 @@ class Trebuchet:
             brown,
             to_int(self.end_short_arm),
             to_int(self.weight_point),
-            width=int(trebuchet_thickness),
+            width=int(self.calculate_trebuchet_thickness()),
         )
 
         pygame.draw.line(
@@ -606,21 +632,25 @@ class Trebuchet:
             brown,
             to_int(self.end_long_arm),
             to_int(self.end_sling),
-            width=int(trebuchet_thickness),
+            width=int(self.calculate_trebuchet_thickness()),
         )
 
         # projectile
-        pygame.draw.circle(screen, grey, self.projectile_pos, 10)
+        pygame.draw.circle(
+            screen, grey, self.projectile_pos, self.calculate_projectile_R()
+        )
         pygame.draw.circle(
             screen,
             light_grey,
             self.projectile_pos,
-            10,
-            width=2,
+            self.calculate_projectile_R(),
+            width=1,
         )
 
         # weight
-        pygame.draw.circle(screen, dark_grey, self.weight_point, 5)
+        pygame.draw.circle(
+            screen, dark_grey, self.weight_point, self.calculate_weight_R()
+        )
 
     def move_base_point(self, tuple):
         self.base_point = tuple
@@ -890,7 +920,7 @@ class main_module:
             if simulation_time == 0.0:
                 draw_raw_text(
                     screen,
-                    "Pivot Height (m) = ",
+                    "Pivot Height (m) =",
                     label_font,
                     white,
                     label_input_x,
@@ -905,7 +935,7 @@ class main_module:
                     Pivot_height_field.active = True
                 draw_raw_text(
                     screen,
-                    "Long Arm (m) = ",
+                    "Long Arm (m) =",
                     label_font,
                     white,
                     label_input_x,
@@ -921,7 +951,7 @@ class main_module:
 
                 draw_raw_text(
                     screen,
-                    "Short Arm (m) = ",
+                    "Short Arm (m) =",
                     label_font,
                     white,
                     label_input_x,
@@ -937,7 +967,7 @@ class main_module:
 
                 draw_raw_text(
                     screen,
-                    "Sling Length (m) = ",
+                    "Sling Length (m) =",
                     label_font,
                     white,
                     label_input_x,
@@ -953,7 +983,7 @@ class main_module:
 
                 draw_raw_text(
                     screen,
-                    "Weight Lenght (m) = ",
+                    "Weight Lenght (m) =",
                     label_font,
                     white,
                     label_input_x,
@@ -969,7 +999,7 @@ class main_module:
 
                 draw_raw_text(
                     screen,
-                    "Projectile Mass (kg) = ",
+                    "Projectile Mass (kg) =",
                     label_font,
                     white,
                     label_input_x,
@@ -985,7 +1015,7 @@ class main_module:
 
                 draw_raw_text(
                     screen,
-                    "Counterweight (kg) = ",
+                    "Counterweight (kg) =",
                     label_font,
                     white,
                     label_input_x,

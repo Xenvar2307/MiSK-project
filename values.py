@@ -23,6 +23,16 @@ label_x_end = label_input_x + label_width
 input_field_width = 125
 input_field_height = 40
 
+min_weight_radius = 3
+weight_density = 2200
+# ((4/3)*PI * R**3) * d = Mass
+# R**3 = 3*Mass / (4 * d * Pi)
+min_trebuchet_thickness = 2
+meters_trebuchet_thickness = 0.2
+
+min_projectile_radius = 2
+projectile_density = 2800  # stone 2200 - 2800
+
 # allowed keys, do wpisywania danych
 allowed_keys = {
     pygame.K_0,
@@ -61,3 +71,14 @@ light_grey = (220, 220, 220)
 grey = (169, 169, 169)
 dark_grey = (112, 128, 144)
 red = (255, 0, 0)
+
+"""
+sizes on laptop 
+262
+225
+231
+266
+294
+316
+304
+"""
