@@ -19,7 +19,6 @@ button_font = pygame.font.SysFont("Arial", 30)
 
 label_font = pygame.font.SysFont("Arial", 33)
 alert_font = pygame.font.SysFont("Arial", 20)
-print(label_font.size("Counterweight (kg) ="))
 
 # frames
 fps = 60
@@ -81,7 +80,7 @@ def print_alerts():
                 alert_font,
                 red,
                 label_input_x,
-                label_input_y + 7 * label_y_skip + i * 50 + j * 25,
+                label_input_y + 8 * label_y_skip + i * 50 + j * 25,
                 0,
                 0,
             )
@@ -383,140 +382,132 @@ class Trebuchet:
             ),
         )
 
-    def update_projectile_position(self, time_passed):
+    def update_projectile_position(self, i):
         global meters_to_pixel_ratio
+        global simulation_time
         if self.holding_projectile:
             self.projectile_pos = self.end_sling
         else:
-            i = 1 / (fps * 10)
-            temp = 0
-            while temp < time_passed:
-                temp += i
-                self.projectile_pos = add_points(
-                    self.projectile_pos,
-                    (
-                        meters_to_pixel_ratio * i * self.Beta,
-                        -meters_to_pixel_ratio
-                        * i
-                        * (-g * (simulation_time - self.release_time) + self.Gamma),
-                    ),
-                )
-                if (
-                    self.projectile_pos[1] > ground_level
-                ):  # coordinates in pygame y is raising down not up
-                    self.projectile_landed = True
-                    temp = time_passed
+            self.projectile_pos = add_points(
+                self.projectile_pos,
+                (
+                    meters_to_pixel_ratio * i * self.Beta,
+                    -meters_to_pixel_ratio
+                    * i
+                    * (-g * (simulation_time - self.release_time) + self.Gamma),
+                ),
+            )
+            if (
+                self.projectile_pos[1] > ground_level
+            ):  # coordinates in pygame y is raising down not up
+                self.projectile_landed = True
 
             # update to change position when shooting
 
-    def update_state_angles(self, time_passed):
+    def update_state_angles(self, i):
         global meters_to_pixel_ratio
-        i = 1 / (fps * 10)
-        temp = 0
-        while temp < time_passed:
-            temp += i
-            c11 = (
-                -(self.short_arm_length**2) * self.weight_mass
-                + 2
-                * self.short_arm_length
-                * self.weight_length
-                * self.weight_mass
-                * math.cos(self.arm_weight_angle)
-                - (self.weight_length**2) * self.weight_mass
-                - (self.long_arm_length**2) * self.projectile_mass
-                + 2
-                * self.long_arm_length
-                * self.sling_length
-                * self.projectile_mass
-                * math.cos(self.arm_sling_angle)
-                - (self.sling_length**2) * self.projectile_mass
-            )
+        c11 = (
+            -(self.short_arm_length**2) * self.weight_mass
+            + 2
+            * self.short_arm_length
+            * self.weight_length
+            * self.weight_mass
+            * math.cos(self.arm_weight_angle)
+            - (self.weight_length**2) * self.weight_mass
+            - (self.long_arm_length**2) * self.projectile_mass
+            + 2
+            * self.long_arm_length
+            * self.sling_length
+            * self.projectile_mass
+            * math.cos(self.arm_sling_angle)
+            - (self.sling_length**2) * self.projectile_mass
+        )
 
-            c12 = (
-                self.weight_length
-                * self.weight_mass
+        c12 = (
+            self.weight_length
+            * self.weight_mass
+            * (
+                self.short_arm_length * math.cos(self.arm_weight_angle)
+                - self.weight_length
+            )
+        )
+
+        c13 = (
+            -self.sling_length
+            * self.projectile_mass
+            * (
+                self.long_arm_length * math.cos(self.arm_sling_angle)
+                - self.arm_sling_angle
+            )
+        )
+        c22 = -(self.weight_length**2) * self.weight_mass
+
+        c33 = -(self.sling_length**2) * self.projectile_mass
+
+        C = numpy.array([[c11, c12, c13], [c12, c22, 0], [c13, 0, c33]])
+        C_inv = numpy.linalg.inv(C)
+
+        w1 = (
+            g
+            * (
+                self.weight_mass
                 * (
-                    self.short_arm_length * math.cos(self.arm_weight_angle)
+                    self.short_arm_length * math.sin(self.pivot_arm_angle)
                     - self.weight_length
+                    * math.sin(self.arm_weight_angle + self.pivot_arm_angle)
+                )
+                - self.projectile_mass
+                * (
+                    self.long_arm_length * math.sin(self.pivot_arm_angle)
+                    + self.sling_length
+                    * math.sin(self.arm_sling_angle - self.pivot_arm_angle)
                 )
             )
-
-            c13 = (
-                -self.sling_length
-                * self.projectile_mass
-                * (
-                    self.long_arm_length * math.cos(self.arm_sling_angle)
-                    - self.arm_sling_angle
-                )
-            )
-            c22 = -(self.weight_length**2) * self.weight_mass
-
-            c33 = -(self.sling_length**2) * self.projectile_mass
-
-            C = numpy.array([[c11, c12, c13], [c12, c22, 0], [c13, 0, c33]])
-            C_inv = numpy.linalg.inv(C)
-
-            w1 = (
-                g
-                * (
-                    self.weight_mass
-                    * (
-                        self.short_arm_length * math.sin(self.pivot_arm_angle)
-                        - self.weight_length
-                        * math.sin(self.arm_weight_angle + self.pivot_arm_angle)
-                    )
-                    - self.projectile_mass
-                    * (
-                        self.long_arm_length * math.sin(self.pivot_arm_angle)
-                        + self.sling_length
-                        * math.sin(self.arm_sling_angle - self.pivot_arm_angle)
-                    )
-                )
-                + self.short_arm_length
-                * self.weight_length
-                * self.weight_mass
-                * (self.arm_weight_angle_change + 2 * self.pivot_arm_angle_change)
-                * math.sin(self.arm_weight_angle)
-                * self.arm_weight_angle_change
-                + self.long_arm_length
-                * self.sling_length
-                * self.projectile_mass
-                * (-self.arm_sling_angle_change + 2 * self.pivot_arm_angle_change)
+            + self.short_arm_length
+            * self.weight_length
+            * self.weight_mass
+            * (self.arm_weight_angle_change + 2 * self.pivot_arm_angle_change)
+            * math.sin(self.arm_weight_angle)
+            * self.arm_weight_angle_change
+            + self.long_arm_length
+            * self.sling_length
+            * self.projectile_mass
+            * (-self.arm_sling_angle_change + 2 * self.pivot_arm_angle_change)
+            * math.sin(self.arm_sling_angle)
+            * self.arm_sling_angle_change
+        )
+        w2 = (
+            self.weight_length
+            * self.weight_mass
+            * (
+                g * math.sin(self.arm_weight_angle - self.pivot_arm_angle)
+                - self.short_arm_length
                 * math.sin(self.arm_sling_angle)
-                * self.arm_sling_angle_change
+                * (self.pivot_arm_angle_change**2)
             )
-            w2 = (
-                self.weight_length
-                * self.weight_mass
-                * (
-                    g * math.sin(self.arm_weight_angle - self.pivot_arm_angle)
-                    - self.short_arm_length
-                    * math.sin(self.arm_sling_angle)
-                    * (self.pivot_arm_angle_change**2)
-                )
+        )
+        w3 = (
+            self.sling_length
+            * self.projectile_mass
+            * (
+                g * math.sin(self.arm_sling_angle - self.pivot_arm_angle)
+                - self.long_arm_length
+                * math.sin(self.arm_sling_angle)
+                * (self.pivot_arm_angle_change**2)
             )
-            w3 = (
-                self.sling_length
-                * self.projectile_mass
-                * (
-                    g * math.sin(self.arm_sling_angle - self.pivot_arm_angle)
-                    - self.long_arm_length
-                    * math.sin(self.arm_sling_angle)
-                    * (self.pivot_arm_angle_change**2)
-                )
-            )
+        )
 
-            W = numpy.array([[w1], [w2], [w3]])
+        W = numpy.array([[w1], [w2], [w3]])
 
-            result = numpy.dot(C_inv, W)
+        result = numpy.dot(C_inv, W)
 
-            self.pivot_arm_angle_change += result[0][0] * i
-            self.arm_weight_angle_change += result[1][0] * i
-            self.arm_sling_angle_change += result[2][0] * i
+        self.pivot_arm_angle_change += result[0][0] * i
+        self.arm_weight_angle_change += result[1][0] * i
+        self.arm_sling_angle_change += result[2][0] * i
 
-            self.pivot_arm_angle += self.pivot_arm_angle_change * i
-            self.arm_weight_angle += self.arm_weight_angle_change * i
-            self.arm_sling_angle += self.arm_sling_angle_change * i
+        self.pivot_arm_angle += self.pivot_arm_angle_change * i
+        self.arm_weight_angle += self.arm_weight_angle_change * i
+        self.arm_sling_angle += self.arm_sling_angle_change * i
 
     def calculate_shot_info(self):
         global meters_to_pixel_ratio
@@ -548,8 +539,14 @@ class Trebuchet:
             self.Gamma + math.sqrt(self.Gamma**2 + 2 * g * self.Epsylon)
         ) / g + self.release_time
 
-        self.range = self.Beta * (self.hit_ground_time - self.release_time)
-        self.peak_time = self.Gamma / g + self.release_time
+        self.range = (
+            self.Beta * (self.hit_ground_time - self.release_time)
+            - (-self.projectile_pos[0] + self.base_point[0]) / meters_to_pixel_ratio
+        )
+        if self.Gamma <= 0:
+            self.peak_time = self.release_time
+        else:
+            self.peak_time = self.Gamma / g + self.release_time
         self.peak = (
             -g / 2 * (self.peak_time - self.release_time) ** 2
             + self.Gamma * (self.peak_time - self.release_time)
@@ -558,6 +555,10 @@ class Trebuchet:
         self.impact = (self.projectile_mass / 2) * (
             self.Beta**2 + (-g * self.hit_ground_time * self.Gamma) ** 2
         )
+        print("Hit Ground Time", self.hit_ground_time)
+        print("Peak Time", self.peak_time)
+        print("peak", self.peak)
+        print("range", self.range)
 
     def go_to_projectile_phase(self):
         global meters_to_pixel_ratio
@@ -570,18 +571,24 @@ class Trebuchet:
         self.holding_projectile = False
 
     def update(self, time_passed):
-        # release control
         global meters_to_pixel_ratio
-        if self.pivot_arm_angle < release_angle and self.holding_projectile:
-            self.go_to_projectile_phase()
+        global simulation_time
+        temp = 0
+        i = 1 / (fps * 10)
+        while temp < time_passed:
+            # release control
+            simulation_time += i
+            temp += i
+            if self.pivot_arm_angle < release_angle and self.holding_projectile:
+                self.go_to_projectile_phase()
 
-        # jezeli przed strzalem, rusz trebusz
-        if self.holding_projectile:
-            self.update_state_angles(time_passed)
+            # jezeli przed strzalem, rusz trebusz
+            if self.holding_projectile:
+                self.update_state_angles(i)
 
-        self.update_points_based_on_angles_and_basepoint()
-        if not self.projectile_landed:
-            self.update_projectile_position(time_passed)
+            self.update_points_based_on_angles_and_basepoint()
+            if not self.projectile_landed:
+                self.update_projectile_position(i)
 
     def calculate_weight_R(self):
         return max(
@@ -717,6 +724,7 @@ class main_module:
         global simulation_time
         global simulation_speed
         global simulation_running
+        global release_angle
         simulation_running = False
         Next_module = Module_names.Exit_app
 
@@ -815,6 +823,17 @@ class main_module:
         Weight_mass_field.text = str(trebuchet.weight_mass)
         Input_Fields.append(Weight_mass_field)
 
+        Release_angle_field = BasicInputField(
+            screen,
+            label_font,
+            label_input_x + label_width,
+            label_input_y + 7 * label_y_skip,
+            input_field_width,
+            input_field_height,
+        )
+        Release_angle_field.text = str(math.degrees(release_angle))
+        Input_Fields.append(Release_angle_field)
+
         # global changeable
         active_input_field = None
 
@@ -823,8 +842,8 @@ class main_module:
             clock.tick(fps)
             # check if we need to update state of trebuchet
             if simulation_running:
+                # this updates the time too
                 trebuchet.update(simulation_speed * 1 / fps)
-                simulation_time += simulation_speed * 1 / fps
 
             # draw the trebuchet itself with current scale
             valid = True
@@ -849,8 +868,8 @@ class main_module:
                     ):
                         alert_list.append(
                             [
-                                "Conflict: Short Arm + Weight Lenght needs to be shorter",
-                                "than Pivot Height",
+                                "Conflict: Short Arm + Weight Lenght needs to be",
+                                "shorter than Pivot Height",
                             ]
                         )
                         Short_arm_field.invalid = True
@@ -862,7 +881,8 @@ class main_module:
                     ):
                         alert_list.append(
                             [
-                                "Conflict: Longer Arm needs to be longer than Pivot Height"
+                                "Conflict: Longer Arm needs to be longer",
+                                "than Pivot Height",
                             ]
                         )
                         Long_arm_field.invalid = True
@@ -880,6 +900,7 @@ class main_module:
                 trebuchet.weight_length = float(Weight_length_field.text)
                 trebuchet.projectile_mass = float(Projectile_mass_field.text)
                 trebuchet.weight_mass = float(Weight_mass_field.text)
+                release_angle = math.radians(float(Release_angle_field.text))
 
             if not simulation_running and simulation_time == 0.0:
                 trebuchet.reset()
@@ -1036,6 +1057,22 @@ class main_module:
                         active_input_field.active = False
                     active_input_field = Weight_mass_field
                     Weight_mass_field.active = True
+
+                draw_raw_text(
+                    screen,
+                    "Release Angle (deg) =",
+                    label_font,
+                    white,
+                    label_input_x,
+                    label_input_y + 7 * label_y_skip,
+                    label_width,
+                    label_height,
+                )
+                if Release_angle_field.draw():
+                    if active_input_field != None:
+                        active_input_field.active = False
+                    active_input_field = Release_angle_field
+                    Release_angle_field.active = True
 
                 # mark down active field
                 if active_input_field != None:
