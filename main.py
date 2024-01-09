@@ -510,6 +510,7 @@ class Trebuchet:
         self.arm_sling_angle += self.arm_sling_angle_change * i
 
     def calculate_shot_info(self):
+        global simulation_time
         global meters_to_pixel_ratio
         self.release_time = simulation_time
         self.Beta = -self.long_arm_length * math.cos(
@@ -535,9 +536,13 @@ class Trebuchet:
             + self.pivot_height
             - self.sling_length * math.cos(self.arm_sling_angle - self.pivot_arm_angle)
         )
-        self.hit_ground_time = (
-            self.Gamma + math.sqrt(self.Gamma**2 + 2 * g * self.Epsylon)
-        ) / g + self.release_time
+        if self.projectile_landed:
+            self.hit_ground_time = simulation_time
+        else:
+            print(self.Epsylon)
+            self.hit_ground_time = (
+                self.Gamma + math.sqrt(self.Gamma**2 + 2 * g * self.Epsylon)
+            ) / g + self.release_time
 
         self.range = (
             self.Beta * (self.hit_ground_time - self.release_time)
@@ -562,9 +567,13 @@ class Trebuchet:
 
     def go_to_projectile_phase(self):
         global meters_to_pixel_ratio
+        if (
+            self.projectile_pos[1] >= ground_level
+        ):  # coordinates in pygame are y reversed
+            self.projectile_landed = True
         self.calculate_shot_info()
         self.move_base_point((side_padding, screen_height - side_padding))
-        update_ratio(False)
+        update_ratio(trebuchet, False)
         self.update_points_based_on_angles_and_basepoint()
         self.update_projectile_position(0)
 
@@ -703,17 +712,21 @@ def reset_simulation(trebuchet: Trebuchet):
     trebuchet.reset()
 
 
-def update_ratio(stage_1):
+def update_ratio(trebuchet, stage_1):
     global meters_to_pixel_ratio
     if stage_1:
         meters_to_pixel_ratio = (screen_height - 2 * side_padding) / (
             trebuchet.pivot_height + trebuchet.long_arm_length + trebuchet.sling_length
         )
-    else:
-        meters_to_pixel_ratio = min(
-            ((screen_height - 2 * side_padding) / trebuchet.peak),
-            ((screen_width - 2 * side_padding) / trebuchet.range),
-        )
+    elif not trebuchet.projectile_landed:
+        if trebuchet.range >= 0:
+            meters_to_pixel_ratio = min(
+                ((screen_height - 2 * side_padding) / trebuchet.peak),
+                ((screen_width - 2 * side_padding) / trebuchet.range),
+            )
+        else:
+            if ["Error: Shot backwards"] not in alert_list:
+                alert_list.append(["Error: Shot backwards"])
 
 
 class main_module:
@@ -888,6 +901,19 @@ class main_module:
                         Long_arm_field.invalid = True
                         Pivot_height_field.invalid = True
                         valid = False
+
+                    if not (
+                        float(Release_angle_field.text)
+                        <= math.degrees(trebuchet.pivot_arm_angle)
+                    ):
+                        alert_list.append(
+                            [
+                                "Conflict: Release angle needs to be smaller than current angle",
+                                f"between pivot beem and short arm ({math.degrees(trebuchet.pivot_arm_angle)})",
+                            ]
+                        )
+                        Release_angle_field.invalid = True
+                        valid = False
                 else:
                     alert_list.append(["Error: Please, fill all the values"])
 
@@ -911,7 +937,7 @@ class main_module:
             else:
                 Run_button_text = button_font.render("Run Simulation", True, white)
 
-            update_ratio(trebuchet.holding_projectile)
+            update_ratio(trebuchet, trebuchet.holding_projectile)
             # drawing
             # stable or changed images
             reset_screen()
