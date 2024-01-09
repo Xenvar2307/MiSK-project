@@ -539,7 +539,6 @@ class Trebuchet:
         if self.projectile_landed:
             self.hit_ground_time = simulation_time
         else:
-            print(self.Epsylon)
             self.hit_ground_time = (
                 self.Gamma + math.sqrt(self.Gamma**2 + 2 * g * self.Epsylon)
             ) / g + self.release_time
@@ -561,9 +560,10 @@ class Trebuchet:
             self.Beta**2 + (-g * self.hit_ground_time * self.Gamma) ** 2
         )
         print("Hit Ground Time", self.hit_ground_time)
+        print("range", self.range)
         print("Peak Time", self.peak_time)
         print("peak", self.peak)
-        print("range", self.range)
+        print("Impact", self.impact)
 
     def go_to_projectile_phase(self):
         global meters_to_pixel_ratio
@@ -863,7 +863,7 @@ class main_module:
             global alert_list
             alert_list = []
             # check for conflicts
-            if not simulation_running:
+            if not simulation_running and simulation_time == 0.0:
                 # check if they are empty
                 # clear invalid checks
                 for inputfield in Input_Fields:
