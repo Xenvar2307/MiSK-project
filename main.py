@@ -26,6 +26,8 @@ clock = pygame.time.Clock()
 
 ButtonFactory = ButtonFactory_Standard()
 
+trajectory_color = white
+
 # global variables
 # scale
 meters_to_pixel_ratio = 40
@@ -410,6 +412,7 @@ class Trebuchet:
         global simulation_time
         global simulation_running
         global stats_shown
+        global trajectory_color
         if self.holding_projectile:
             self.projectile_pos = self.end_sling
         else:
@@ -429,6 +432,7 @@ class Trebuchet:
                 self.projectile_landed = True
                 simulation_running = False
                 stats_shown = True
+                trajectory_color = dark_grey
 
     def update_state_angles(self, i):
         global meters_to_pixel_ratio
@@ -692,7 +696,7 @@ class Trebuchet:
         )
         # trajectory
         for point in self.trajectory:
-            pygame.draw.circle(screen, white, point, 1)
+            pygame.draw.circle(screen, trajectory_color, point, 1)
 
         # weight
         pygame.draw.circle(
@@ -734,9 +738,11 @@ def reset_simulation(trebuchet: Trebuchet):
     global simulation_time
     global simulation_running
     global stats_shown
+    global trajectory_color
     simulation_running = False
     simulation_time = 0.0
     stats_shown = False
+    trajectory_color = white
     trebuchet.reset()
 
 
@@ -767,6 +773,7 @@ class main_module:
         global simulation_running
         global release_angle
         global stats_shown
+        global trajectory_color
         simulation_running = False
         Next_module = Module_names.Exit_app
 
@@ -996,6 +1003,10 @@ class main_module:
             if trebuchet.projectile_landed == True:
                 if Show_Stats_button.draw() and valid:
                     stats_shown = not stats_shown
+                    if trajectory_color == white:
+                        trajectory_color = dark_grey
+                    else:
+                        trajectory_color = white
                 temp_rect = Stats_button_text.get_rect()
                 temp_rect.center = Show_Stats_button.rect.center
 
