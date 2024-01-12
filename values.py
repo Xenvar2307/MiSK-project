@@ -13,7 +13,7 @@ ground_level = screen_height - side_padding
 
 # label sizes
 label_input_x = screen_width - 500
-label_input_y = 175
+label_input_y = 225
 label_width = 350
 label_height = 40
 label_y_padding = 10

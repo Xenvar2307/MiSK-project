@@ -253,7 +253,7 @@ class Trebuchet:
         self.projectile_landed = False
         self.release_time = 0.0
 
-        self.trajectory = []
+        self.trajectory = set()
 
         # update part
 
@@ -425,7 +425,7 @@ class Trebuchet:
                     * (-g * (simulation_time - self.release_time) + self.Gamma),
                 ),
             )
-            self.trajectory.append(self.projectile_pos)
+            self.trajectory.add(self.projectile_pos)
             if (
                 self.projectile_pos[1] >= ground_level
             ):  # coordinates in pygame y is raising down not up
@@ -715,7 +715,7 @@ class Trebuchet:
         self.holding_projectile = True
         self.projectile_landed = False
 
-        self.trajectory = []
+        self.trajectory = set()
 
         # state variables, angles
         self.pivot_arm_angle = (
