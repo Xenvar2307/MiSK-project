@@ -36,6 +36,7 @@ release_angle = math.pi / 4  # 45 degrees
 # simulation data
 simulation_time = 0.0
 simulation_running = False
+stats_shown = False
 
 simulation_speed = 1.0
 simulation_speed_upper_limit = 5.0
@@ -66,7 +67,7 @@ def draw_text(surface, text, font, text_col, x, y, width, height):
     surface.blit(text_image, (x, y))
 
 
-def draw_raw_text(surface, text, font, text_col, x, y, tempwidth, tempheight):
+def draw_raw_text(surface, text, font, text_col, x, y):
     text_image = font.render(text, True, text_col)
     surface.blit(text_image, (x, y))
 
@@ -81,8 +82,6 @@ def print_alerts():
                 red,
                 label_input_x,
                 label_input_y + 8 * label_y_skip + i * 50 + j * 25,
-                0,
-                0,
             )
 
 
@@ -109,11 +108,33 @@ def get_scale_step(input: int) -> int:  # 0,1,2 -> 1,2,5; 3,4,5 -> 10,20,50
             return 5 * multiply
 
 
-def meters_to_text(meters: int):
+def meters_to_text(meters):
     if meters < 1000:
-        return f"{meters}m"
+        return f"{round(meters,2)}m"
     else:
-        return f"{meters/1000}km"
+        return f"{round(meters)/1000}km"
+
+
+def sci_notation(number, sig_fig=2):
+    ret_string = "{0:.{1:d}e}".format(number, sig_fig)
+    a, b = ret_string.split("e")
+    # remove leading "+" and strip leading zeros
+    b = int(b)
+    return a + " * 10^" + str(b)
+
+
+def seconds_to_text(time):
+    hours_count = int(time / 3600)
+    minutes_count = int((time - (hours_count * 3600)) / 60)
+    seconds_count = round(time - (hours_count * 3600) - (minutes_count * 60), 2)
+    result = ""
+    if hours_count != 0:
+        result += f"{hours_count} h "
+    if minutes_count != 0:
+        result += f"{minutes_count} min "
+
+    result += f"{seconds_count} s"
+    return result
 
 
 def reset_screen():
@@ -387,6 +408,7 @@ class Trebuchet:
     def update_projectile_position(self, i):
         global meters_to_pixel_ratio
         global simulation_time
+        global simulation_running
         if self.holding_projectile:
             self.projectile_pos = self.end_sling
         else:
@@ -401,11 +423,10 @@ class Trebuchet:
             )
             self.trajectory.append(self.projectile_pos)
             if (
-                self.projectile_pos[1] > ground_level
+                self.projectile_pos[1] >= ground_level
             ):  # coordinates in pygame y is raising down not up
                 self.projectile_landed = True
-
-            # update to change position when shooting
+                simulation_running = False
 
     def update_state_angles(self, i):
         global meters_to_pixel_ratio
@@ -562,11 +583,6 @@ class Trebuchet:
         self.impact = (self.projectile_mass / 2) * (
             self.Beta**2 + (-g * self.hit_ground_time * self.Gamma) ** 2
         )
-        print("Hit Ground Time", self.hit_ground_time)
-        print("range", self.range)
-        print("Peak Time", self.peak_time)
-        print("peak", self.peak)
-        print("Impact", self.impact)
 
     def go_to_projectile_phase(self):
         global meters_to_pixel_ratio
@@ -715,8 +731,10 @@ class Trebuchet:
 def reset_simulation(trebuchet: Trebuchet):
     global simulation_time
     global simulation_running
+    global stats_shown
     simulation_running = False
     simulation_time = 0.0
+    stats_shown = False
     trebuchet.reset()
 
 
@@ -746,6 +764,7 @@ class main_module:
         global simulation_speed
         global simulation_running
         global release_angle
+        global stats_shown
         simulation_running = False
         Next_module = Module_names.Exit_app
 
@@ -763,6 +782,10 @@ class main_module:
         )
         UpX_button = ButtonFactory.factory(
             screen, "+0.5X", button_font, screen_width - 350, 0, 100, 50
+        )
+
+        Show_Stats_button = ButtonFactory.factory(
+            screen, "", button_font, screen_width - 250, 100, 250, 50
         )
         Input_Fields = []
 
@@ -918,7 +941,7 @@ class main_module:
                             [
                                 "Conflict: Release angle needs to be smaller than",
                                 " current angle between pivot beem",
-                                f" and short arm ({math.degrees(trebuchet.pivot_arm_angle)})",
+                                f" and short arm ({round(math.degrees(trebuchet.pivot_arm_angle),2)})",
                             ]
                         )
                         Release_angle_field.invalid = True
@@ -963,6 +986,19 @@ class main_module:
 
             screen.blit(Run_button_text, temp_rect)
 
+            if stats_shown:
+                Stats_button_text = button_font.render("Hide Results", True, white)
+            else:
+                Stats_button_text = button_font.render("Show Results", True, white)
+
+            if trebuchet.projectile_landed == True:
+                if Show_Stats_button.draw() and valid:
+                    stats_shown = not stats_shown
+                temp_rect = Stats_button_text.get_rect()
+                temp_rect.center = Show_Stats_button.rect.center
+
+                screen.blit(Stats_button_text, temp_rect)
+
             # Reset Button
             if simulation_time > 0.0:
                 if Reset_button.draw():
@@ -989,8 +1025,6 @@ class main_module:
                     white,
                     label_input_x,
                     label_input_y,
-                    label_width,
-                    label_height,
                 )
                 if Pivot_height_field.draw():
                     if active_input_field != None:
@@ -1004,8 +1038,6 @@ class main_module:
                     white,
                     label_input_x,
                     label_input_y + 1 * label_y_skip,
-                    label_width,
-                    label_height,
                 )
                 if Long_arm_field.draw():
                     if active_input_field != None:
@@ -1020,8 +1052,6 @@ class main_module:
                     white,
                     label_input_x,
                     label_input_y + 2 * label_y_skip,
-                    label_width,
-                    label_height,
                 )
                 if Short_arm_field.draw():
                     if active_input_field != None:
@@ -1036,8 +1066,6 @@ class main_module:
                     white,
                     label_input_x,
                     label_input_y + 3 * label_y_skip,
-                    label_width,
-                    label_height,
                 )
                 if Sling_length_field.draw():
                     if active_input_field != None:
@@ -1052,8 +1080,6 @@ class main_module:
                     white,
                     label_input_x,
                     label_input_y + 4 * label_y_skip,
-                    label_width,
-                    label_height,
                 )
                 if Weight_length_field.draw():
                     if active_input_field != None:
@@ -1068,8 +1094,6 @@ class main_module:
                     white,
                     label_input_x,
                     label_input_y + 5 * label_y_skip,
-                    label_width,
-                    label_height,
                 )
                 if Projectile_mass_field.draw():
                     if active_input_field != None:
@@ -1084,8 +1108,6 @@ class main_module:
                     white,
                     label_input_x,
                     label_input_y + 6 * label_y_skip,
-                    label_width,
-                    label_height,
                 )
                 if Weight_mass_field.draw():
                     if active_input_field != None:
@@ -1100,8 +1122,6 @@ class main_module:
                     white,
                     label_input_x,
                     label_input_y + 7 * label_y_skip,
-                    label_width,
-                    label_height,
                 )
                 if Release_angle_field.draw():
                     if active_input_field != None:
@@ -1114,6 +1134,49 @@ class main_module:
                     pygame.draw.rect(
                         screen, (247, 0, 255), active_input_field.rect, width=4
                     )
+
+            # results of simulation
+            if stats_shown:
+                draw_raw_text(
+                    screen,
+                    f"Peak height: {meters_to_text(trebuchet.peak)}",
+                    label_font,
+                    white,
+                    label_input_x,
+                    label_input_y,
+                )
+                draw_raw_text(
+                    screen,
+                    f"Peak h time: {seconds_to_text(trebuchet.peak_time)}",
+                    label_font,
+                    white,
+                    label_input_x,
+                    label_input_y + 1 * label_y_skip,
+                )
+                draw_raw_text(
+                    screen,
+                    f"Range: {meters_to_text(trebuchet.range)}",
+                    label_font,
+                    white,
+                    label_input_x,
+                    label_input_y + 2 * label_y_skip,
+                )
+                draw_raw_text(
+                    screen,
+                    f"Landing time: {seconds_to_text(trebuchet.hit_ground_time)}",
+                    label_font,
+                    white,
+                    label_input_x,
+                    label_input_y + 3 * label_y_skip,
+                )
+                draw_raw_text(
+                    screen,
+                    "Impact: " + sci_notation(trebuchet.impact) + " J",
+                    label_font,
+                    white,
+                    label_input_x,
+                    label_input_y + 4 * label_y_skip,
+                )
 
             # running info
             temp_cute_time = round(simulation_time, 2)
