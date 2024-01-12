@@ -409,6 +409,7 @@ class Trebuchet:
         global meters_to_pixel_ratio
         global simulation_time
         global simulation_running
+        global stats_shown
         if self.holding_projectile:
             self.projectile_pos = self.end_sling
         else:
@@ -427,6 +428,7 @@ class Trebuchet:
             ):  # coordinates in pygame y is raising down not up
                 self.projectile_landed = True
                 simulation_running = False
+                stats_shown = True
 
     def update_state_angles(self, i):
         global meters_to_pixel_ratio
