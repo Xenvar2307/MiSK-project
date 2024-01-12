@@ -230,6 +230,8 @@ class Trebuchet:
         self.projectile_landed = False
         self.release_time = 0.0
 
+        self.trajectory = []
+
         # update part
 
         # initial state variables -> angles
@@ -397,6 +399,7 @@ class Trebuchet:
                     * (-g * (simulation_time - self.release_time) + self.Gamma),
                 ),
             )
+            self.trajectory.append(self.projectile_pos)
             if (
                 self.projectile_pos[1] > ground_level
             ):  # coordinates in pygame y is raising down not up
@@ -669,6 +672,9 @@ class Trebuchet:
             self.calculate_projectile_R(),
             width=1,
         )
+        # trajectory
+        for point in self.trajectory:
+            pygame.draw.circle(screen, white, point, 1)
 
         # weight
         pygame.draw.circle(
@@ -686,6 +692,8 @@ class Trebuchet:
 
         self.holding_projectile = True
         self.projectile_landed = False
+
+        self.trajectory = []
 
         # state variables, angles
         self.pivot_arm_angle = (
@@ -908,8 +916,9 @@ class main_module:
                     ):
                         alert_list.append(
                             [
-                                "Conflict: Release angle needs to be smaller than current angle",
-                                f"between pivot beem and short arm ({math.degrees(trebuchet.pivot_arm_angle)})",
+                                "Conflict: Release angle needs to be smaller than",
+                                " current angle between pivot beem",
+                                f" and short arm ({math.degrees(trebuchet.pivot_arm_angle)})",
                             ]
                         )
                         Release_angle_field.invalid = True
