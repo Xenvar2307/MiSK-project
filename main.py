@@ -176,6 +176,8 @@ def draw_scale():
         (screen_width - 2 * side_padding) / (meters_to_pixel_ratio * step)
     )
     text_step = int(lines_to_draw / 5)
+    if text_step == 0:
+        text_step = 1
     first = True
     while count_lines <= lines_to_draw:
         meters += step
@@ -206,6 +208,8 @@ def draw_scale():
         (screen_height - 2 * side_padding) / (meters_to_pixel_ratio * step)
     )
     text_step = int(lines_to_draw / 5)
+    if text_step == 0:
+        text_step = 1
     first = True
     while count_lines <= lines_to_draw:
         meters += step
@@ -1259,6 +1263,7 @@ class Module_names(Enum):
 # main
 
 current_module = Module_names.Main_module
+# standard from De Jong
 trebuchet = Trebuchet(5.7, 1.2, 5, 3.2, 1.4, 15, 2000)
 dev_mode = True
 
